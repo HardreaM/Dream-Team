@@ -78,8 +78,8 @@ class Missle(pygame.sprite.Sprite):
     sprites = {"up": "missle_up.png", "down": "missle_down.png", "right": "missle_right.png", "left": "missle_left.png", "blaze": "blaze.png"}
 
     def __init__(self, path, x, y, ttl, type, speed, owner):
-        global thread_flag
-
+        global to_draw_missles
+        #print("constructing")
         if type == "up":
             self.type = [-speed, 0]
         elif type == "down":
@@ -89,7 +89,7 @@ class Missle(pygame.sprite.Sprite):
         elif type == "left":
             self.type = [0, -speed]
 
-        super().__init__(missles_group, all_sprites)
+        super().__init__()
         self.image = Missle.sprites.get(type)
         self.path = path
         self.x = x + 0.4 + self.type[0]*3
@@ -99,31 +99,32 @@ class Missle(pygame.sprite.Sprite):
         self.image = pygame.image.load(path + Missle.sprites.get(type))
         self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
 
-        self.add(missles_group, all_sprites)
-        thread_flag = 1
+        missles_group.add(self)
+
 
     def move(self):
         
+        self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
         texture_hits = pygame.sprite.spritecollide(self, destroyable_textures, True)
         undestroyable_texture_hits = pygame.sprite.spritecollide(self, undestroyable_textures, False)
         tank_hits = pygame.sprite.spritecollide(self, tanks_group, False)
 
         if undestroyable_texture_hits:  #check collisions with undestroyable textures
-            self.remove(missles_group, all_sprites)
+            self.kill()
         elif len(tank_hits) > 0:    #check collisions with tanks
             for tank in tank_hits:
                 tank.hitpoints -= 1
-            self.remove(missles_group, all_sprites)
+            self.kill()
         elif self.y*16+8 > width or self.x < 0 or self.x*16+8 > height or self.y < 0: #check collisions with screen borders
-            self.remove(missles_group, all_sprites)
+            self.kill()
         elif not(texture_hits) and self.ttl > 0:    #move missle
             self.x = self.x + self.type[0]
             self.y = self.y + self.type[1]
             self.rect = self.image.get_rect().move(16*self.y, 16*self.x)
-            self.remove(missles_group, all_sprites)
+            self.kill()
             self.add(missles_group, all_sprites)        
         else:
-            self.remove(missles_group, all_sprites)
+            self.kill()
 
         self.ttl -= 1
 
@@ -196,7 +197,7 @@ def draw_level():   #level's size is 75x50 textures
                     enemy = Tank(path=(path + "/sprites/"), x=i, y=j, type="red", hitpoints=3)
 
 def get_data(sock): #Thread to get 2nd Palyer's data
-    global enemy, thread_flag
+    global enemy
     while True:
 
         data = sock.recv(50)
@@ -217,7 +218,6 @@ def get_data(sock): #Thread to get 2nd Palyer's data
             y = float(y)
             ttl = int(ttl)
 
-            thread_flag = 0
             Missle(path=(path + "/sprites/"), x=x, y=y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
         
         elif data.count(' ') == 6:
@@ -231,14 +231,13 @@ def get_data(sock): #Thread to get 2nd Palyer's data
             tank_y = float(tank_y)
             image = int(image)
 
-            thread_flag = 0
             Missle(path=(path + "/sprites/"), x=missle_x, y=missle_y, ttl=ttl, type=direction, speed=1/4, owner=enemy)
             enemy.place(x=tank_x, y=tank_y, image=image)
         
 
 
 def main():  #Main function
-    global flag, tank, enemy, thread_flag, clock, sock
+    global flag, tank, enemy, clock, sock, to_draw_missles
     
     loading_message = message.render(str("LOADING..."), 1, (180,0,0))
     screen.blit(loading_message, (500, 300))
@@ -303,9 +302,6 @@ def main():  #Main function
                 data += ' '
             data += str(tank.x) + ' ' + str(tank.y) + ' ' + str(2)
 
-        while not thread_flag:  #Cycle need's to syncronise socket thread and main function.
-            pass
-
         for missle in missles_group:
             missle.move()
         
@@ -320,6 +316,7 @@ def main():  #Main function
         text_hp = message.render(str(tank.hitpoints), 1, (180,0,0)) #HP text
         
         screen.fill(THECOLORS['black'])
+
         tanks_group.draw(screen)
         missles_group.draw(screen)
         textures_group.draw(screen)
@@ -351,8 +348,9 @@ if __name__ == "__main__":
     tank = 0
     enemy = 0
     flag = 0
-    thread_flag = 1
     ip = '127.0.0.1'
+
+    to_draw_missles = list()
 
     clock = pygame.time.Clock()
     
