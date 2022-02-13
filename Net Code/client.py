@@ -113,7 +113,8 @@ class Missle(pygame.sprite.Sprite):
             self.kill()
         elif len(tank_hits) > 0:    #check collisions with tanks
             for tank in tank_hits:
-                tank.hitpoints -= 1
+                if self.owner != tank:
+                    tank.hitpoints -= 1
             self.kill()
         elif self.y*16+8 > width or self.x < 0 or self.x*16+8 > height or self.y < 0: #check collisions with screen borders
             self.kill()

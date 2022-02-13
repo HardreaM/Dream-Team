@@ -77,7 +77,8 @@ class Missle(pygame.sprite.Sprite):
         elif type == "left":
             self.type = [0, -speed]
 
-        super().__init__(missles_group, all_sprites)
+        #super().__init__(missles_group, all_sprites)
+        pygame.sprite.Sprite.__init__(self)
         self.image = Missle.sprites.get(type)
         self.path = path
         self.x = x + 0.4 + self.type[0]*3
