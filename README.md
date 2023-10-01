@@ -1,3 +1,5 @@
+![BattleCity](https://github.com/HardreaM/Dream-Team/assets/46752979/3b6b180a-799d-43a0-9298-0ae982268162)
+
 # Dream-Team
 How to use:
 1. Install Python
